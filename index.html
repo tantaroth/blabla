@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <title>Blablaing</title>
+        <script src="https://cdn.firebase.com/js/client/2.0.2/firebase.js"></script>
+        <style type="text/css" media="all">
+            #container{
+                overflow: hidden;
+            }
+            .left{
+                float: left;
+            }
+            .right{
+                float: right;
+            }
+        </style>
+    </head>
+    <body>
+    <div id="container" style="max-width: 30%; margin: 0 auto;">
+        <div class="left">
+            <form id="form_infoUser" accept-charset="utf-8">
+                <label for="username">Usuario</label>
+                <input type="text" name="username" id=username />
+                <button type="submit" name="save">Guardar</button>
+                <input type="hidden" name="to" id="to" />
+            </form>
+            <hr />
+            <textarea id=input cols="40" placeholder="Selecciona un usuario.." disabled></textarea>
+            <div id="contentChat">
+                
+            </div>
+        </div>
+        <div class="right">
+            <div id="users">
+                
+            </div>
+        </div>
+    </div>
+        
+        <script type="text/javascript" charset="utf-8">
+            var blaFirebaseRef = new Firebase("https://blablaing.firebaseio.com/");
+            
+            var contentChat = document.getElementById('contentChat');
+            var form_infoUser = document.getElementById('form_infoUser');
+            var input = document.getElementById('input');
+            var titleTag = document.getElementsByTagName("title")[0];
+            
+            blaFirebaseRef
+                .child('users')
+                
+                .on("value", function(snapshot) {
+                    var users = snapshot.val();
+                    var info;
+                    
+                    var listUsers = document.getElementById('users');
+                    listUsers.innerHTML = '';
+                    var ulUsers = document.createElement('ul');
+                    $ulUsers = listUsers.appendChild(ulUsers);
+                    
+                    if(users){
+                        for(var user in users){
+                            info = users[user];
+                            
+                            if(myIP() != info.ip){
+                                var liUser = document.createElement('li');
+                                liUser.innerHTML = '<a href="javascript: void(0);" onclick="input.disabled = false; input.placeholder = \'Enviar..\'; document.getElementById(\'to\').value = \''+info.username+'\'">'+info.username+'</a>';
+                                $ulUsers.appendChild(liUser);
+                            }else{
+                                form_infoUser.username.value = (info.username != '')?info.username:myIP();
+                                form_infoUser.username.disabled = true;
+                                form_infoUser.save.disabled = true;
+                            }
+                        }
+                    }else{
+                        form_infoUser.username.value = '';
+                        form_infoUser.username.disabled = false;
+                        form_infoUser.save.disabled = false;
+                    }
+                });
+                
+            blaFirebaseRef
+                .child('messages')
+                
+                .on("value", function(snapshot) {
+                    var msgs = snapshot.val();
+                    contentChat.innerHTML = '';
+                    
+                    if(msgs){
+                        var divChat;
+                        
+                        for(var msg in msgs){
+                            if(msgs[msg].from == form_infoUser.username.value || msgs[msg].to == form_infoUser.to.value){
+                                divChat = document.createElement('div');
+                                divChat.innerHTML = '<b>'+msgs[msg].from+'</b> '+msgs[msg].text;
+                                contentChat.appendChild(divChat);
+                            }
+                        }
+                        
+                        console.log(msgs[msg].from+' == '+form_infoUser.to.value)
+                        if(msgs[msg].from == form_infoUser.to.value){
+                            titleTag.innerHTML = form_infoUser.to.value+': '+msgs[msg].text;
+                        }else{
+                            titleTag.innerHTML = 'Blablaing';
+                        }
+                    }
+                });
+            
+            form_infoUser.onsubmit = function(e){
+                this.username.value = (this.username.value != '')?this.username.value:myIP();
+                this.username.disabled = true;
+                this.save.disabled = true;
+                
+                blaFirebaseRef.child('users').push({
+                    ip: myIP(),
+                    username: ((this.username.value)?this.username.value:myIP())
+                });
+                
+                return false;
+            };
+            input.onkeyup = function(e){
+                var unicode = e.keyCode? e.keyCode : e.charCode;
+                
+                switch(unicode){
+                    case 13:
+                        
+                        blaFirebaseRef
+                            .child('messages')
+                            .push({
+                                from: form_infoUser.username.value,
+                                to: 'tester',
+                                text: this.value
+                            });
+                            
+                            this.value = '';
+                        break;
+                };
+                
+                return false;
+            };
+            myIP = function(){
+                if (window.XMLHttpRequest) xmlhttp = new XMLHttpRequest();
+                else xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                
+                xmlhttp.open("GET","http://api.hostip.info/get_html.php",false);
+                xmlhttp.send();
+                
+                hostipInfo = xmlhttp.responseText.split("\n");
+                
+                for (i=0; hostipInfo.length >= i; i++) {
+                    ipAddress = hostipInfo[i].split(":");
+                    if ( ipAddress[0] == "IP" ) return ipAddress[1];
+                }
+                
+                return false;
+            }
+        </script>
+    </body>
+</html>

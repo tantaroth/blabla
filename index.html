@@ -169,12 +169,16 @@
                         clearElemsByClassName(chat_box);
                         
                         for(var msg in msgs){
-                            console.log(msgs[msg].to+' == '+form_infoUser.username.value);
-                            if(msgs[msg].from == form_infoUser.username.value){
+                            if(msgs[msg].from == form_infoUser.username.value || msgs[msg].to == form_infoUser.username.value){
                                 if(document.getElementById('body_'+msgs[msg].from)){
                                     divChat = document.createElement('div');
                                     divChat.innerHTML = '<b>'+msgs[msg].from+'</b> '+msgs[msg].text;
                                     document.getElementById('body_'+msgs[msg].from).insertBefore(divChat, document.getElementById('body_'+msgs[msg].from).firstChild);
+                                }else
+                                if(document.getElementById('body_'+msgs[msg].to)){
+                                    divChat = document.createElement('div');
+                                    divChat.innerHTML = '<b>'+msgs[msg].from+'</b> '+msgs[msg].text;
+                                    document.getElementById('body_'+msgs[msg].to).insertBefore(divChat, document.getElementById('body_'+msgs[msg].to).firstChild);
                                 }
                             }
                         }

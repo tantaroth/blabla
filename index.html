@@ -17,34 +17,112 @@
         </style>
     </head>
     <body>
-    <div id="container" style="max-width: 30%; margin: 0 auto;">
-        <div class="left">
-            <form id="form_infoUser" accept-charset="utf-8">
-                <label for="username">Usuario</label>
-                <input type="text" name="username" id=username />
-                <button type="submit" name="save">Guardar</button>
-                <input type="hidden" name="to" id="to" />
-            </form>
-            <hr />
-            <textarea id=input cols="40" placeholder="Selecciona un usuario.." disabled></textarea>
-            <div id="contentChat">
-                
+        <div id="container" style="max-width: 30%; margin: 0 auto;">
+            <div class="left">
+                <form id="form_infoUser" accept-charset="utf-8">
+                    <label for="username">Usuario</label>
+                    <input type="text" name="username" id=username />
+                    <button type="submit" name="save">Guardar</button>
+                    <input type="hidden" name="to" id="to" />
+                </form>
+                <hr />
+                <textarea id=input cols="40" placeholder="Selecciona un usuario.." disabled></textarea>
+                <div id="contentChat" style="max-height: 200px;">
+                    
+                </div>
+            </div>
+            <div class="right">
+                <div id="users" style="position: absolute;">
+                    
+                </div>
             </div>
         </div>
-        <div class="right">
-            <div id="users">
-                
-            </div>
-        </div>
-    </div>
-        
+            
+        <audio id="call">
+            <source src="electronic_store_bell_three_rings.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    
         <script type="text/javascript" charset="utf-8">
+            browser = function(){
+                var nVer = navigator.appVersion;
+                var nAgt = navigator.userAgent;
+                var browserName  = navigator.appName;
+                var fullVersion  = ''+parseFloat(navigator.appVersion); 
+                var majorVersion = parseInt(navigator.appVersion,10);
+                var nameOffset,verOffset,ix;
+                
+                // In Opera 15+, the true version is after "OPR/" 
+                if ((verOffset=nAgt.indexOf("OPR/"))!=-1) {
+                 browserName = "Opera";
+                 fullVersion = nAgt.substring(verOffset+4);
+                }
+                // In older Opera, the true version is after "Opera" or after "Version"
+                else if ((verOffset=nAgt.indexOf("Opera"))!=-1) {
+                 browserName = "Opera";
+                 fullVersion = nAgt.substring(verOffset+6);
+                 if ((verOffset=nAgt.indexOf("Version"))!=-1) 
+                   fullVersion = nAgt.substring(verOffset+8);
+                }
+                // In MSIE, the true version is after "MSIE" in userAgent
+                else if ((verOffset=nAgt.indexOf("MSIE"))!=-1) {
+                 browserName = "Microsoft Internet Explorer";
+                 fullVersion = nAgt.substring(verOffset+5);
+                }
+                // In Chrome, the true version is after "Chrome" 
+                else if ((verOffset=nAgt.indexOf("Chrome"))!=-1) {
+                 browserName = "Chrome";
+                 fullVersion = nAgt.substring(verOffset+7);
+                }
+                // In Safari, the true version is after "Safari" or after "Version" 
+                else if ((verOffset=nAgt.indexOf("Safari"))!=-1) {
+                 browserName = "Safari";
+                 fullVersion = nAgt.substring(verOffset+7);
+                 if ((verOffset=nAgt.indexOf("Version"))!=-1) 
+                   fullVersion = nAgt.substring(verOffset+8);
+                }
+                // In Firefox, the true version is after "Firefox" 
+                else if ((verOffset=nAgt.indexOf("Firefox"))!=-1) {
+                 browserName = "Firefox";
+                 fullVersion = nAgt.substring(verOffset+8);
+                }
+                // In most other browsers, "name/version" is at the end of userAgent 
+                else if ( (nameOffset=nAgt.lastIndexOf(' ')+1) < 
+                          (verOffset=nAgt.lastIndexOf('/')) ) 
+                {
+                 browserName = nAgt.substring(nameOffset,verOffset);
+                 fullVersion = nAgt.substring(verOffset+1);
+                 if (browserName.toLowerCase()==browserName.toUpperCase()) {
+                  browserName = navigator.appName;
+                 }
+                }
+                // trim the fullVersion string at semicolon/space if present
+                if ((ix=fullVersion.indexOf(";"))!=-1)
+                   fullVersion=fullVersion.substring(0,ix);
+                if ((ix=fullVersion.indexOf(" "))!=-1)
+                   fullVersion=fullVersion.substring(0,ix);
+                
+                majorVersion = parseInt(''+fullVersion,10);
+                if (isNaN(majorVersion)) {
+                 fullVersion  = ''+parseFloat(navigator.appVersion); 
+                 majorVersion = parseInt(navigator.appVersion,10);
+                }
+                
+                return {
+                    Name: browserName,
+                    FullVersion: fullVersion,
+                    MajorVersion: majorVersion,
+                    AppName: navigator.appName,
+                    UserAgent: navigator.userAgent
+                }
+            };
             var blaFirebaseRef = new Firebase("https://blablaing.firebaseio.com/");
             
             var contentChat = document.getElementById('contentChat');
             var form_infoUser = document.getElementById('form_infoUser');
-            var input = document.getElementById('input');
+            var audioCall = document.getElementById('call');
             var titleTag = document.getElementsByTagName("title")[0];
+            var input = document.getElementById('input');
             
             blaFirebaseRef
                 .child('users')
@@ -62,12 +140,13 @@
                         for(var user in users){
                             info = users[user];
                             
-                            if(myIP() != info.ip){
+                            console.log(info.browser+' != '+browser().Name);
+                            if(info.browser != browser().Name){
                                 var liUser = document.createElement('li');
                                 liUser.innerHTML = '<a href="javascript: void(0);" onclick="input.disabled = false; input.placeholder = \'Enviar..\'; document.getElementById(\'to\').value = \''+info.username+'\'">'+info.username+'</a>';
                                 $ulUsers.appendChild(liUser);
                             }else{
-                                form_infoUser.username.value = (info.username != '')?info.username:myIP();
+                                form_infoUser.username.value = (info.username != '')?info.username:browser().Name;
                                 form_infoUser.username.disabled = true;
                                 form_infoUser.save.disabled = true;
                             }
@@ -90,30 +169,31 @@
                         var divChat;
                         
                         for(var msg in msgs){
-                            if(msgs[msg].from == form_infoUser.username.value || msgs[msg].to == form_infoUser.to.value){
+                            if(msgs[msg].from == form_infoUser.username.value || msgs[msg].to == form_infoUser.username.value){
                                 divChat = document.createElement('div');
                                 divChat.innerHTML = '<b>'+msgs[msg].from+'</b> '+msgs[msg].text;
-                                contentChat.appendChild(divChat);
+                                contentChat.insertBefore(divChat, contentChat.firstChild);
                             }
                         }
                         
-                        console.log(msgs[msg].from+' == '+form_infoUser.to.value)
                         if(msgs[msg].from == form_infoUser.to.value){
                             titleTag.innerHTML = form_infoUser.to.value+': '+msgs[msg].text;
+                            audioCall.play();
                         }else{
                             titleTag.innerHTML = 'Blablaing';
+                            audioCall.pause();
                         }
                     }
                 });
             
             form_infoUser.onsubmit = function(e){
-                this.username.value = (this.username.value != '')?this.username.value:myIP();
+                this.username.value = (this.username.value != '')?this.username.value:browser().Name;
                 this.username.disabled = true;
                 this.save.disabled = true;
                 
                 blaFirebaseRef.child('users').push({
-                    ip: myIP(),
-                    username: ((this.username.value)?this.username.value:myIP())
+                    browser: browser().Name,
+                    username: ((this.username.value)?this.username.value:browser().Name)
                 });
                 
                 return false;
@@ -128,7 +208,7 @@
                             .child('messages')
                             .push({
                                 from: form_infoUser.username.value,
-                                to: 'tester',
+                                to: form_infoUser.to.value,
                                 text: this.value
                             });
                             

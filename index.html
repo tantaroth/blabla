@@ -143,7 +143,7 @@
                             console.log(info.browser+' != '+browser().Name);
                             if(info.browser != browser().Name){
                                 var liUser = document.createElement('li');
-                                liUser.innerHTML = '<a href="javascript: void(0);" onclick="input.disabled = false; input.placeholder = \'Enviar..\'; document.getElementById(\'to\').value = \''+info.username+'\'">'+info.username+'</a>';
+                                liUser.innerHTML = '<a href="javascript: void(0);" onclick="input.disabled = false; input.placeholder = \'Hablando con '+info.username+'..\'; document.getElementById(\'to\').value = \''+info.username+'\'">'+info.username+'</a>';
                                 $ulUsers.appendChild(liUser);
                             }else{
                                 form_infoUser.username.value = (info.username != '')?info.username:browser().Name;
